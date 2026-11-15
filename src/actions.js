@@ -61,21 +61,25 @@ export async function solunarDayAction(monitor, fields = {}) {
 export async function checkPlaces(monitor) {
   await monitor.reloadPlaces();
   logger.info(`Check requested: ${monitor.places.length} place(s)`);
-  if (monitor.config.invalidSpots.length > 0) {
-    return render(STATUS, 'invalidSpot', { slots: monitor.config.invalidSpots.join(', ') });
-  }
+  // Short (a toast shows 200 characters): the places and their rating today,
+  // after the unreadable spots if any.
+  const invalid =
+    monitor.config.invalidSpots.length > 0
+      ? render(STATUS, 'invalidSpot', { slots: monitor.config.invalidSpots.join(', ') })
+      : null;
   if (monitor.places.length === 0) {
-    return render(STATUS, 'noPlace');
+    return invalid ?? render(STATUS, 'noPlace');
   }
   return Object.fromEntries(
-    LANGUAGES.map((language) => [
-      language,
-      STATUS[language].check({
-        count: monitor.places.length,
-        list: monitor.places
-          .map((place) => daySummary(monitor, place, monitor.snapshot(place).today, language))
-          .join(' '),
-      }),
-    ]),
+    LANGUAGES.map((language) => {
+      const list = monitor.places
+        .map((place) => {
+          const { rating } = monitor.snapshot(place).today;
+          return `${monitor.displayName(place)} (${rating}/4, ${RATING_NAMES[language][rating]})`;
+        })
+        .join(', ');
+      const check = STATUS[language].check({ count: monitor.places.length, list });
+      return [language, invalid ? `${invalid[language]} ${check}` : check];
+    }),
   );
 }

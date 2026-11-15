@@ -215,5 +215,13 @@ test('the scene action gives the day of a place', async (t) => {
 test('the check action lists the places in every language', async (t) => {
   const w = await world(t);
   const { data } = await w.fake.action('check_places');
-  assert.deepEqual(Object.keys(data.message ?? data), ['en', 'fr', 'de', 'es']);
+  const message = data.message ?? data;
+  assert.deepEqual(Object.keys(message), ['en', 'fr', 'de', 'es']);
+  assert.equal(message.fr, '1 lieu(x) : Solunaire Maison (2/4, Moyenne)');
+  const bad = await world(t, { config: { spot_3_coordinates: 'x' } });
+  const both = await bad.fake.action('check_places');
+  assert.match(
+    (both.data.message ?? both.data).en,
+    /^Unreadable coordinates for spot 3: .* 1 place\(s\): /,
+  );
 });

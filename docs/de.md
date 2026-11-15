@@ -42,7 +42,7 @@ Die Integration wird von GitHub installiert: **Integrationen → Von GitHub inst
 Die Koordinaten lassen sich aus jeder Karte kopieren (Rechtsklick in OpenStreetMap oder Google
 Maps). Ein Dezimalkomma geht auch: `43,6047; 1,4442`. Leere die Koordinaten eines Platzes, um ihn zu
 entfernen. Speichere und lege die Geräte dann im Tab **Entdecken** an. Der Knopf **Orte prüfen**
-listet jeden Ort mit seinem Tag.
+listet jeden Ort mit seiner Tagesnote.
 
 Die Koordinaten der Häuser werden beim Start, bei jeder Suche und alle 6 Stunden gelesen: Nachdem du
 ein Haus verschoben hast, drücke **Orte prüfen**.

@@ -41,8 +41,7 @@ La integración se instala desde GitHub: **Integraciones → Instalar desde GitH
 
 Las coordenadas se copian de cualquier mapa (clic derecho en OpenStreetMap o Google Maps). La coma
 decimal también funciona: `43,6047; 1,4442`. Vacíe las coordenadas de un lugar para quitarlo. Guarde
-y cree los dispositivos en la pestaña **Descubrir**. El botón **Comprobar los lugares** lista cada
-lugar con su día.
+y cree los dispositivos en la pestaña **Descubrir**. El botón **Comprobar los lugares** lista cada lugar con su nota del día.
 
 Las coordenadas de las casas se leen al arrancar, en cada búsqueda y cada 6 horas: después de mover
 una casa, pulse **Comprobar los lugares**.

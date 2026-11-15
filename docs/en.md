@@ -41,7 +41,7 @@ The integration is installed from GitHub: **Integrations → Install from GitHub
 
 Coordinates can be copied from any map (a right click in OpenStreetMap or Google Maps). A decimal
 comma works too: `43,6047; 1,4442`. Empty the coordinates of a spot to remove it. Save, then create
-the devices in the **Discover** tab. The **Check the places** button lists every place with its day.
+the devices in the **Discover** tab. The **Check the places** button lists every place with its day rating.
 
 The house coordinates are read at startup, at every scan and every 6 hours: after moving a house,
 press **Check the places**.

@@ -42,7 +42,7 @@ L'intégration s'installe depuis GitHub : **Intégrations → Installer depuis G
 Les coordonnées se copient depuis n'importe quelle carte (clic droit dans OpenStreetMap ou Google
 Maps). La virgule décimale marche aussi : `43,6047; 1,4442`. Videz les coordonnées d'un coin pour le
 retirer. Enregistrez, puis créez les appareils dans l'onglet **Découverte**. Le bouton **Vérifier les
-lieux** liste chaque lieu avec sa journée.
+lieux** liste chaque lieu avec sa note du jour.
 
 Les coordonnées des maisons sont lues au démarrage, à chaque recherche et toutes les 6 heures : après
 avoir déplacé une maison, appuyez sur **Vérifier les lieux**.
