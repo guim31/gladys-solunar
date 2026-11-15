@@ -1,0 +1,31 @@
+{
+  "source": "aa.usno.navy.mil/api/rstt/oneday, tz=0 (UTC), fetched 2026-11-15",
+  "date": "2026-06-21",
+  "coords": "44.42,-79.37",
+  "moondata": [
+    {
+      "phen": "Set",
+      "time": "04:52"
+    },
+    {
+      "phen": "Rise",
+      "time": "17:13"
+    },
+    {
+      "phen": "Upper Transit",
+      "time": "23:17"
+    }
+  ],
+  "sundata": [
+    {
+      "phen": "Set",
+      "time": "01:05"
+    },
+    {
+      "phen": "Rise",
+      "time": "09:33"
+    }
+  ],
+  "fracillum": "46%",
+  "curphase": "Waxing Crescent"
+}

@@ -1,61 +1,124 @@
-# Demo Devices Template
+# Solunar
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+The **solunar periods** in Gladys, for fishing and hunting: the times of the day when fish and game
+are said to be most active, according to the theory John Alden Knight published in 1926. Everything
+is computed in the container from the position of the Moon and the Sun: no account, no key, no
+internet access.
 
 ## What you get
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+- **One device per place**: each located house of Gladys, and up to three fishing spots typed in the
+  configuration. Each device gives the period in progress (none, major or minor, and its end), a
+  "period active" switch, the next period and the minutes left before it, the day rating from 0 to
+  4, the moon phase and its illumination.
+- A **dashboard widget**: the periods of the day for one place, with the one in progress in green,
+  the day rating and the moon.
+- A **scene trigger**: a solunar period starts, filtered by place, kind (major or minor) and day
+  rating.
+- A **scene action**: the periods, rating and moon of today or tomorrow at a place, in one sentence
+  to send by message.
+
+This integration gives the fishing periods. For the moon itself (phase, rise and set, lunar events),
+see the [gladys-moon-phase](https://github.com/William-De71/gladys-moon-phase) widget: both work
+side by side.
+
+## Requirements
+
+- Gladys Assistant **5.1.0** or later (widgets, scene triggers and actions).
+- A house located in Gladys (**Settings → Houses**), or the coordinates of a spot.
+
+The integration is installed from GitHub: **Integrations → Install from GitHub**, address
+`https://github.com/guim31/gladys-solunar`.
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+| Setting                          | Default | What it does                                                      |
+| -------------------------------- | ------- | ----------------------------------------------------------------- |
+| Language of the values           | French  | Language of the feature names and of the texts sent to Gladys.    |
+| One device per located house     | On      | Uses the coordinates of the houses set in Gladys.                 |
+| Spot 1 to 3: name                | empty   | Name of the device of the spot (renamable later in Gladys).       |
+| Spot 1 to 3: latitude, longitude | empty   | `latitude, longitude` in decimal degrees, e.g. `43.6047, 1.4442`. |
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+Coordinates can be copied from any map (a right click in OpenStreetMap or Google Maps). A decimal
+comma works too: `43,6047; 1,4442`. Empty the coordinates of a spot to remove it. Save, then create
+the devices in the **Discover** tab. The **Check the places** button lists every place with its day rating.
 
-## Actions
+The house coordinates are read at startup, at every scan and every 6 hours: after moving a house,
+press **Check the places**.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+## Devices
 
-## Scenes
+| Feature               | Type     | Example                   |
+| --------------------- | -------- | ------------------------- |
+| Solunar period        | text     | `Major until 18:40`       |
+| Solunar period active | binary   | 1 during any period       |
+| Next solunar period   | text     | `Minor tomorrow at 05:10` |
+| Next period in (min)  | duration | 95                        |
+| Day rating (0-4)      | number   | 3                         |
+| Moon phase            | text     | `Waxing gibbous`          |
+| Moon illumination (%) | number   | 78                        |
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+Times are those of the time zone of Gladys, a day runs from midnight to midnight. The values are
+computed every minute and only the changes are sent.
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+## Dashboard widget
 
-## Dashboard
+**Solunar periods**: choose a place (the first one by default). It shows the day rating, the moon
+illumination, then each period of the day: past, in progress (green) or coming. A ☀ marks a period
+that meets a sunrise or a sunset. The **Show the moon** setting hides the moon tile and phase.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+## Scene trigger
+
+**Solunar period started**, when a major or minor period begins at a place. Filters: the place, the
+kind of period, the day rating. Variables: `place`, `start`, `end`, `with_sun` (the period meets a
+sunrise or a sunset) and `summary`, a ready-made sentence.
+
+A restart of the integration in the middle of a period does not fire it again.
+
+## Scene action
+
+**Get the solunar day**: for a place and a day (today or tomorrow), returns `summary` (one sentence),
+`rating`, `periods` (the list with their times), `moon_phase` and `illumination`.
+
+## Scene examples
+
+- Every evening at 8 pm, **Get the solunar day** for tomorrow at the lake, then send the summary by
+  message: the outing is planned the day before.
+- **Solunar period started**, kind major, rating 3 or 4: a notification "the fish are biting".
+- Condition on **Next period in (min)** below 30 at the house: time to prepare the gear.
+
+## How it is computed
+
+- **Major periods**, two hours: the Moon crosses the meridian overhead (upper transit) or underfoot
+  (lower transit), centred on the transit.
+- **Minor periods**, one hour: moonrise and moonset, centred on the event.
+- A period is **with the sun** when a sunrise or a sunset falls within it or within 30 minutes of
+  its edges.
+- **Day rating**, 0 to 4: 2 points within 1.5 days of a new or full moon (1 point within 3.5 days),
+  plus 2 points when a major period meets the sun (1 when only a minor one does).
+
+The Moon comes back about 50 minutes later every day: some days have only three periods (no moonrise,
+or one transit). Beyond the polar circles the Moon may stay up or down for days: only the major
+periods remain. The positions come from [astronomy-engine](https://github.com/cosinekitty/astronomy)
+(MIT): the times agree within one or two minutes with the US Naval Observatory tables.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **No device in the Discover tab**: no house is located and no spot is filled. Locate a house in
+  **Settings → Houses** or type the coordinates of a spot, then save.
+- **"Unreadable coordinates" in the status**: type `latitude, longitude`, latitude first, in decimal
+  degrees (not degrees and minutes).
+- **Times off by one hour**: check the time zone of Gladys in its settings.
+- Logs: `LOG_LEVEL=debug` shows every computation.
+
+## Limits
+
+- The solunar theory is a tradition of anglers and hunters, not a scientific forecast: weather,
+  water and season matter as much.
+- The rating is the one described above; other tables (solunarforecast.com, apps) use their own
+  scales and may differ.
+- The times of a spot are given in the time zone of Gladys, even for a spot in another time zone.
+- Three spots at most besides the houses.
+
+Not affiliated with any solunar table publisher. Theory: John Alden Knight (1926). Computation:
+astronomy-engine by Don Cross (MIT).

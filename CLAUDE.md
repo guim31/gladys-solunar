@@ -31,16 +31,19 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
-src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+index.js                          SDK wiring only (registerHandlers from src/app.js)
+src/app.js                        every SDK handler, wired to the monitor
+src/monitor.js                    places, minute ticks, states, scene trigger, widget refresh
+src/solunar.js                    pure computation: periods, sun coincidences, rating, phase
+src/time.js                       local days and times in the TZ of Gladys (Intl only)
+src/device.js                     one device per place (house or spot), its features
+src/messages.js                   every text sent to Gladys, in en/fr/de/es
+src/widgets.js                    the `solunar_day` widget
+src/actions.js                    the `solunar_day` scene action and `check_places` action
+src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults), coordinates parser
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys
+test/                             node --test, against the SDK's fake Gladys; USNO tables in fixtures
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +73,8 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, and `docs/*.md`, kept in sync.
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -251,3 +254,27 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Solunar (propre à cette intégration)
+
+- **Calcul** : `astronomy-engine` (dépendance d'exécution, dans `dependencies`). Majeures : passages
+  supérieur et inférieur de la Lune (`SearchHourAngle` 0 et 12), ±1 h ; mineures : lever et coucher
+  (`SearchRiseSet`), ±30 min ; « avec le soleil » : lever ou coucher du soleil dans la période ±30 min.
+  Une journée garde les périodes dont le **centre** tombe entre ses deux minuits (fuseau `TZ`).
+- **Référence** : tables USNO (`aa.usno.navy.mil/api/rstt/oneday`, `tz=0`) dans `test/fixtures/usno/`,
+  écarts mesurés ≤ 2 min. L'USNO ne donne le passage inférieur que pour une Lune circumpolaire, et
+  rien pour une Lune qui reste couchée : les passages comptent quand même (Knight).
+- **Note du jour** maison (0-4) : 2/1/0 points pour la phase (≤ 1,5 j / ≤ 3,5 j d'une nouvelle ou
+  pleine lune) + 2/1/0 pour le soleil. Chaque table publiée a la sienne : ne pas la présenter comme
+  « la » note solunaire.
+- **Lieux** : maisons localisées (`location: true`, `getHouses()` relu au démarrage, au scan, au
+  bouton et toutes les 6 h, car le cœur n'a pas d'événement) et trois coins en champs `string`
+  (« lat, lon », virgule décimale acceptée). Identifiants `house-<selector>` et `spot-<n>` : le
+  numéro du coin, pas son nom, pour garder l'historique si on le renomme.
+- **Déclencheur** `period_started` : comparé au tick précédent (une minute) ; le premier tick après
+  un démarrage sert de point de départ, rien n'est persisté sous `/data`. Il ne part que si la
+  période a commencé il y a moins de 5 min (`START_WINDOW_MS`) : pas de mineure « révélée » à la fin
+  d'une majeure qui la recouvre, ni de départ fantôme quand un lieu bouge. Le filtre `rating` est une
+  chaîne `'0'`…`'4'` (options d'un `multi_select`).
+- `next_in` change chaque minute : `keep_history: false`, et seul ce changement part entre deux
+  minutes ordinaires.

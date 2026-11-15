@@ -1,0 +1,22 @@
+{
+  "source": "aa.usno.navy.mil/api/rstt/oneday, tz=0 (UTC), fetched 2026-11-15",
+  "date": "2026-01-03",
+  "coords": "69.6496,18.956",
+  "moondata": [
+    {
+      "phen": "Object continuously above the Horizon",
+      "time": null
+    },
+    {
+      "phen": "Lower Transit",
+      "time": "10:53"
+    },
+    {
+      "phen": "Upper Transit",
+      "time": "23:24"
+    }
+  ],
+  "sundata": [],
+  "fracillum": "100%",
+  "curphase": "Full Moon"
+}
