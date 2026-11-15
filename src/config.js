@@ -45,7 +45,12 @@ export function parseCoordinates(raw) {
   if (parts.length !== 2) {
     return null;
   }
-  const [latitude, longitude] = parts.map((part) => Number(part.trim().replace(',', '.')));
+  const values = parts.map((part) => part.trim().replace(',', '.'));
+  // Plain decimal degrees only: an empty half ("43.6,") is not a 0.
+  if (!values.every((value) => /^[-+]?\d+(\.\d+)?$/.test(value))) {
+    return null;
+  }
+  const [latitude, longitude] = values.map(Number);
   if (
     !Number.isFinite(latitude) ||
     !Number.isFinite(longitude) ||

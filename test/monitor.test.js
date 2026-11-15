@@ -84,8 +84,13 @@ test('the first tick is a starting point: a start in the middle of a period fire
   // Started at 09:00: the major period began while it ran, it fires.
   const inside = await world(t);
   await createAll(inside);
-  await tickAt(inside, '2026-11-15T16:00:00Z');
+  await tickAt(inside, '2026-11-15T15:44:00Z');
   assert.equal(inside.fake.sceneEvents.length, 1);
+  // A tick long after a start (a sleeping host) does not fire it late.
+  const asleep = await world(t);
+  await createAll(asleep);
+  await tickAt(asleep, '2026-11-15T16:00:00Z');
+  assert.equal(asleep.fake.sceneEvents.length, 0);
   // Started at 17:00, inside the major period: nothing fires.
   const late = await createWorld({
     clock: { time: 0, now: () => Date.parse('2026-11-15T16:00:00Z') },
@@ -224,4 +229,28 @@ test('the check action lists the places in every language', async (t) => {
     (both.data.message ?? both.data).en,
     /^Unreadable coordinates for spot 3: .* 1 place\(s\): /,
   );
+});
+
+test('an out-of-range house is skipped, the other places still work', async (t) => {
+  const w = await world(t, {
+    houses: [HOUSE, { id: 'h3', name: 'Typo', selector: 'typo', latitude: 95, longitude: 1 }],
+  });
+  assert.deepEqual(
+    w.fake.discoveredDevices.map((d) => d.name),
+    ['Solunaire Maison'],
+  );
+  await createAll(w);
+  assert.equal(w.fake.states.length, 7);
+});
+
+test('Spanish texts: "a la 01:10", "a las 13:10"', async (t) => {
+  const w = await world(t, { config: { language: 'es' } });
+  await createAll(w);
+  await tickAt(w, '2026-11-15T22:30:00Z');
+  assert.match(
+    valueOf(w, 'next_period'),
+    /^Mayor mañana a las 0[2-9]:\d\d$|^Mayor mañana a la 01:\d\d$/,
+  );
+  await tickAt(w, '2026-11-15T15:41:00Z');
+  assert.equal(valueOf(w, 'period'), 'Mayor hasta las 18:40');
 });

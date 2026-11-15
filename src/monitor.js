@@ -25,6 +25,9 @@ const logger = createLogger({ name: 'solunar' });
 
 export const WIDGET_KEY = 'solunar_day';
 export const TRIGGER = 'period_started';
+// A tick may come a little late (event loop, sleeping host): a start seen
+// within this window still fires.
+export const START_WINDOW_MS = 5 * MINUTE_MS;
 
 export const DEFAULT_TIMINGS = {
   tickMs: MINUTE_MS,
@@ -151,7 +154,11 @@ export class Monitor {
         const houses = await this.gladys.getHouses();
         this.houses = (Array.isArray(houses) ? houses : []).filter(
           (house) =>
-            house?.selector && Number.isFinite(house.latitude) && Number.isFinite(house.longitude),
+            house?.selector &&
+            Number.isFinite(house.latitude) &&
+            Number.isFinite(house.longitude) &&
+            Math.abs(house.latitude) <= 90 &&
+            Math.abs(house.longitude) <= 180,
         );
         this.recovered('houses', 'The houses of Gladys are read again');
       } catch (err) {
@@ -320,8 +327,16 @@ export class Monitor {
     const states = [];
     const signature = [];
     for (const place of this.places) {
-      const snapshot = this.snapshot(place, at);
-      await this.detectStart(place, snapshot);
+      let snapshot;
+      try {
+        snapshot = this.snapshot(place, at);
+        this.recovered(`place:${place.id}`, `The place ${place.id} is computed again`);
+      } catch (err) {
+        // One odd place must not stop the others.
+        this.failed(`place:${place.id}`, 'warn', `Cannot compute ${place.id}: ${err.message}`);
+        continue;
+      }
+      await this.detectStart(place, snapshot, at);
       signature.push(place.id, snapshot.today.key, snapshot.current?.peak ?? null);
       if (this.isCreated(place)) {
         states.push(...this.statesOf(place, snapshot, at));
@@ -338,12 +353,19 @@ export class Monitor {
     }
   }
 
-  async detectStart(place, snapshot) {
+  async detectStart(place, snapshot, at) {
     const { current } = snapshot;
     const seen = this.previous.has(place.id);
     const before = this.previous.get(place.id) ?? null;
     this.previous.set(place.id, current?.peak ?? null);
-    if (!seen || current === null || current.peak === before) {
+    // Only a period that really just began: not a minor one revealed when an
+    // overlapping major one ends, nor the period found after a place moved.
+    if (
+      !seen ||
+      current === null ||
+      current.peak === before ||
+      at - current.start > START_WINDOW_MS
+    ) {
       return;
     }
     const firedKey = `${place.id}:${current.peak}`;
@@ -368,14 +390,16 @@ export class Monitor {
   }
 
   /** The flat data of the scene event (fields, then variables of the manifest). */
-  eventData(place, { current, today }) {
+  eventData(place, { current, today, tomorrow }) {
+    // The rating of the day the period belongs to (by its centre).
+    const day = current.peak >= today.end ? tomorrow : today;
     const language = this.config.language;
     const time = (ms) => formatTime(ms, language, this.timeZone);
     const name = this.displayName(place);
     return {
       device: placeIds(this.gladys, place).device,
       kind: current.kind,
-      rating: String(today.rating),
+      rating: String(day.rating),
       place: name,
       start: time(current.start),
       end: time(current.end),

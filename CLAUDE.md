@@ -272,7 +272,9 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
   (« lat, lon », virgule décimale acceptée). Identifiants `house-<selector>` et `spot-<n>` : le
   numéro du coin, pas son nom, pour garder l'historique si on le renomme.
 - **Déclencheur** `period_started` : comparé au tick précédent (une minute) ; le premier tick après
-  un démarrage sert de point de départ, rien n'est persisté sous `/data`. Le filtre `rating` est une
+  un démarrage sert de point de départ, rien n'est persisté sous `/data`. Il ne part que si la
+  période a commencé il y a moins de 5 min (`START_WINDOW_MS`) : pas de mineure « révélée » à la fin
+  d'une majeure qui la recouvre, ni de départ fantôme quand un lieu bouge. Le filtre `rating` est une
   chaîne `'0'`…`'4'` (options d'un `multi_select`).
 - `next_in` change chaque minute : `keep_history: false`, et seul ce changement part entre deux
   minutes ordinaires.

@@ -18,7 +18,18 @@ test('coordinates: points, decimal commas, semicolons, blanks', () => {
 });
 
 test('coordinates: unreadable or out of range', () => {
-  for (const text of ['', 'Toulouse', '43.6', '95, 10', '43, 200', '1, 2, 3', 'a, b']) {
+  for (const text of [
+    '',
+    'Toulouse',
+    '43.6',
+    '95, 10',
+    '43, 200',
+    '1, 2, 3',
+    'a, b',
+    '43.6,',
+    '43.6; ',
+    '0x10, 1e1',
+  ]) {
     assert.equal(parseCoordinates(text), null, text);
   }
 });

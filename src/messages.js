@@ -7,6 +7,9 @@
 
 import { LANGUAGES } from './config.js';
 
+// Spanish: "a la 01:10", "a las 13:10".
+const article = (time) => (time.startsWith('01:') ? 'la' : 'las');
+
 // Feature names, frozen at creation in Gladys (language of the configuration).
 export const NAMES = {
   en: {
@@ -172,8 +175,9 @@ export const PHRASES = {
     sun: 'mit der Sonne',
   },
   es: {
-    current: ({ kind, end }) => `${kind} hasta las ${end}`,
-    next: ({ kind, start, tomorrow }) => `${kind} ${tomorrow ? 'mañana ' : ''}a las ${start}`,
+    current: ({ kind, end }) => `${kind} hasta ${article(end)} ${end}`,
+    next: ({ kind, start, tomorrow }) =>
+      `${kind} ${tomorrow ? 'mañana ' : ''}a ${article(start)} ${start}`,
     range: ({ start, end }) => `${start}–${end}`,
     started: ({ kind, place, start, end, sun }) =>
       `Periodo solunar ${kind.toLowerCase()} (${place}), ${start}–${end}${sun ? ', con el sol' : ''}.`,
