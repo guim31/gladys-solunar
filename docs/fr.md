@@ -1,67 +1,133 @@
-# Template de démonstration
+# Solunar
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Les **périodes solunaires** dans Gladys, pour la pêche et la chasse : les moments de la journée où
+poissons et gibier seraient les plus actifs, selon la théorie publiée par John Alden Knight en 1926.
+Tout est calculé dans le conteneur d'après la position de la Lune et du Soleil : sans compte, sans
+clé, sans accès à internet.
 
 ## Ce que vous obtenez
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+- **Un appareil par lieu** : chaque maison localisée de Gladys, et jusqu'à trois coins de pêche
+  saisis dans la configuration. Chaque appareil donne la période en cours (aucune, majeure ou
+  mineure, et sa fin), un indicateur « période active », la prochaine période et les minutes qui
+  restent avant elle, la note du jour de 0 à 4, la phase de la lune et son illumination.
+- Un **widget de tableau de bord** : les périodes du jour en un lieu, celle en cours en vert, la
+  note du jour et la lune.
+- Un **déclencheur de scène** : une période solunaire commence, filtré par lieu, type (majeure ou
+  mineure) et note du jour.
+- Une **action de scène** : les périodes, la note et la lune d'aujourd'hui ou de demain en un lieu,
+  en une phrase à envoyer par message.
+
+Cette intégration donne les périodes de pêche. Pour la lune elle-même (phase, lever et coucher,
+événements lunaires), voyez le widget [gladys-moon-phase](https://github.com/William-De71/gladys-moon-phase) :
+les deux fonctionnent côte à côte.
+
+## Prérequis
+
+- Gladys Assistant **5.1.0** ou plus récent (widgets, déclencheurs et actions de scène).
+- Une maison localisée dans Gladys (**Paramètres → Maisons**), ou les coordonnées d'un coin.
+
+L'intégration s'installe depuis GitHub : **Intégrations → Installer depuis GitHub**, adresse
+`https://github.com/guim31/gladys-solunar`.
 
 ## Configuration
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+| Réglage                          | Défaut   | Rôle                                                                 |
+| -------------------------------- | -------- | -------------------------------------------------------------------- |
+| Langue des valeurs               | Français | Langue des noms de fonctionnalités et des textes envoyés à Gladys.   |
+| Un appareil par maison localisée | Activé   | Utilise les coordonnées des maisons réglées dans Gladys.             |
+| Coin 1 à 3 : nom                 | vide     | Nom de l'appareil du coin (renommable ensuite dans Gladys).          |
+| Coin 1 à 3 : latitude, longitude | vide     | `latitude, longitude` en degrés décimaux, par ex. `43.6047, 1.4442`. |
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+Les coordonnées se copient depuis n'importe quelle carte (clic droit dans OpenStreetMap ou Google
+Maps). La virgule décimale marche aussi : `43,6047; 1,4442`. Videz les coordonnées d'un coin pour le
+retirer. Enregistrez, puis créez les appareils dans l'onglet **Découverte**. Le bouton **Vérifier les
+lieux** liste chaque lieu avec sa journée.
 
-## Actions
+Les coordonnées des maisons sont lues au démarrage, à chaque recherche et toutes les 6 heures : après
+avoir déplacé une maison, appuyez sur **Vérifier les lieux**.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+## Appareils
 
-## Scènes
+| Fonctionnalité               | Type    | Exemple                  |
+| ---------------------------- | ------- | ------------------------ |
+| Période solunaire            | texte   | `Majeure jusqu'à 18:40`  |
+| Période solunaire active     | binaire | 1 pendant toute période  |
+| Prochaine période solunaire  | texte   | `Mineure demain à 05:10` |
+| Prochaine période dans (min) | durée   | 95                       |
+| Note du jour (0-4)           | nombre  | 3                        |
+| Phase de la lune             | texte   | `Gibbeuse croissante`    |
+| Illumination de la lune (%)  | nombre  | 78                       |
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+Les heures sont celles du fuseau horaire de Gladys, une journée va de minuit à minuit. Les valeurs
+sont calculées chaque minute et seuls les changements sont envoyés.
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+## Widget de tableau de bord
 
-## Tableau de bord
+**Périodes solunaires** : choisissez un lieu (le premier par défaut). Il affiche la note du jour,
+l'illumination de la lune, puis chaque période du jour : passée, en cours (en vert) ou à venir. Un ☀
+signale une période qui rencontre un lever ou un coucher du soleil. Le réglage **Afficher la lune**
+masque la tuile et la phase de la lune.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+## Déclencheur de scène
+
+**Période solunaire commencée**, quand une période majeure ou mineure débute en un lieu. Filtres : le
+lieu, le type de période, la note du jour. Variables : `place` (le lieu), `start` (début), `end`
+(fin), `with_sun` (la période rencontre un lever ou un coucher du soleil) et `summary`, une phrase
+toute prête.
+
+Un redémarrage de l'intégration au milieu d'une période ne la déclenche pas une seconde fois.
+
+## Action de scène
+
+**Obtenir la journée solunaire** : pour un lieu et un jour (aujourd'hui ou demain), renvoie
+`summary` (une phrase), `rating` (la note), `periods` (la liste avec les heures), `moon_phase` et
+`illumination`.
+
+## Exemples de scènes
+
+- Chaque soir à 20 h, **Obtenir la journée solunaire** pour demain au lac, puis envoyer le résumé par
+  message : la sortie se prépare la veille.
+- **Période solunaire commencée**, type majeure, note 3 ou 4 : une notification « ça mord ».
+- Condition sur **Prochaine période dans (min)** inférieure à 30 à la maison : il est temps de
+  préparer le matériel.
+
+## Comment c'est calculé
+
+- **Périodes majeures**, deux heures : la Lune passe au méridien au-dessus de nous (passage
+  supérieur) ou sous nos pieds (passage inférieur), centrées sur le passage.
+- **Périodes mineures**, une heure : lever et coucher de la lune, centrées sur l'événement.
+- Une période est **avec le soleil** quand un lever ou un coucher du soleil tombe dedans ou à moins de
+  30 minutes de ses bords.
+- **Note du jour**, de 0 à 4 : 2 points à moins d'un jour et demi d'une nouvelle ou pleine lune
+  (1 point à moins de 3,5 jours), plus 2 points quand une période majeure rencontre le soleil (1 quand
+  seule une mineure le fait).
+
+La Lune revient environ 50 minutes plus tard chaque jour : certains jours n'ont que trois périodes
+(pas de lever de lune, ou un seul passage). Au-delà des cercles polaires, la Lune peut rester levée
+ou couchée plusieurs jours : seules les périodes majeures restent. Les positions viennent
+d'[astronomy-engine](https://github.com/cosinekitty/astronomy) (MIT) : les heures concordent à une ou
+deux minutes près avec les tables de l'US Naval Observatory.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **Aucun appareil dans l'onglet Découverte** : aucune maison n'est localisée et aucun coin n'est
+  rempli. Localisez une maison dans **Paramètres → Maisons** ou saisissez les coordonnées d'un coin,
+  puis enregistrez.
+- **« Coordonnées illisibles » dans l'état** : saisissez `latitude, longitude`, la latitude d'abord,
+  en degrés décimaux (pas en degrés et minutes).
+- **Heures décalées d'une heure** : vérifiez le fuseau horaire de Gladys dans ses paramètres.
+- Journaux : `LOG_LEVEL=debug` montre chaque calcul.
+
+## Limites
+
+- La théorie solunaire est une tradition de pêcheurs et de chasseurs, pas une prévision
+  scientifique : la météo, l'eau et la saison comptent tout autant.
+- La note est celle décrite plus haut ; d'autres tables (solunarforecast.com, applications) ont leurs
+  propres échelles et peuvent différer.
+- Les heures d'un coin sont données dans le fuseau horaire de Gladys, même pour un coin situé dans un
+  autre fuseau.
+- Trois coins au plus en plus des maisons.
+
+Non affiliée à un éditeur de tables solunaires. Théorie : John Alden Knight (1926). Calcul :
+astronomy-engine de Don Cross (MIT).

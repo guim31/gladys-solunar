@@ -1,177 +1,574 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Solunar",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Solunar periods for fishing and hunting, computed locally: major, minor, day rating.",
+    "fr": "Périodes solunaires de pêche et de chasse calculées en local : majeures, mineures, note du jour.",
+    "de": "Solunar-Perioden zum Angeln und Jagen, lokal berechnet: Haupt- und Nebenperioden, Tagesnote.",
+    "es": "Periodos solunares para pesca y caza, calculados en local: mayores, menores, nota del día."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-solunar:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-solunar/main/cover.png",
+  "categories": ["leisure", "environment"],
+  "transports": ["local"],
+  "location": true,
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
-      "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+      "label": {
+        "en": "Solunar periods",
+        "fr": "Périodes solunaires",
+        "de": "Solunar-Perioden",
+        "es": "Periodos solunares"
       },
-      "links": [
+      "description": {
+        "en": "Computed in the container from the position of the Moon, without account or internet: major periods (Moon overhead or underfoot, 2 h) and minor ones (moonrise and moonset, 1 h). One device per located house and per fishing spot: save, then create them in the Discover tab.",
+        "fr": "Calculées dans le conteneur d'après la position de la Lune, sans compte ni internet : périodes majeures (Lune au zénith ou au nadir, 2 h) et mineures (lever et coucher de lune, 1 h). Un appareil par maison localisée et par coin de pêche : enregistrez, puis créez-les dans l'onglet Découverte.",
+        "de": "Im Container aus der Mondposition berechnet, ohne Konto und ohne Internet: Hauptperioden (Mond im Zenit oder Nadir, 2 h) und Nebenperioden (Mondauf- und -untergang, 1 h). Ein Gerät pro verortetem Haus und pro Angelplatz: speichere und lege sie dann im Tab „Entdecken“ an.",
+        "es": "Calculados en el contenedor a partir de la posición de la Luna, sin cuenta ni internet: periodos mayores (Luna en el cenit o el nadir, 2 h) y menores (salida y puesta de la luna, 1 h). Un dispositivo por casa ubicada y por lugar de pesca: guarde y créelos en la pestaña Descubrir."
+      }
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the values",
+        "fr": "Langue des valeurs",
+        "de": "Sprache der Werte",
+        "es": "Idioma de los valores"
+      },
+      "description": {
+        "en": "Names of the features and texts sent to Gladys.",
+        "fr": "Noms des fonctionnalités et textes envoyés à Gladys.",
+        "de": "Namen der Funktionen und an Gladys gesendete Texte.",
+        "es": "Nombres de las funciones y textos enviados a Gladys."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "use_houses",
+      "type": "boolean",
+      "label": {
+        "en": "One device per located house",
+        "fr": "Un appareil par maison localisée",
+        "de": "Ein Gerät pro verortetem Haus",
+        "es": "Un dispositivo por casa ubicada"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
-    },
-    {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
       "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
-      },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
-    },
-    {
-      "key": "unit",
-      "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Uses the coordinates of the houses set in Gladys (Settings → Houses).",
+        "fr": "Utilise les coordonnées des maisons réglées dans Gladys (Paramètres → Maisons).",
+        "de": "Nutzt die Koordinaten der Häuser in Gladys (Einstellungen → Häuser).",
+        "es": "Usa las coordenadas de las casas definidas en Gladys (Ajustes → Casas)."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": true
+    },
+    {
+      "key": "spots",
+      "type": "section",
+      "label": {
+        "en": "Fishing spots",
+        "fr": "Coins de pêche",
+        "de": "Angelplätze",
+        "es": "Lugares de pesca"
+      },
+      "description": {
+        "en": "Up to three more places: a name and the coordinates, \"latitude, longitude\" in decimal degrees (copy them from a map). Leave the coordinates empty to remove a spot.",
+        "fr": "Jusqu'à trois lieux de plus : un nom et les coordonnées, « latitude, longitude » en degrés décimaux (copiez-les depuis une carte). Videz les coordonnées pour retirer un coin.",
+        "de": "Bis zu drei weitere Orte: ein Name und die Koordinaten, „Breite, Länge“ in Dezimalgrad (kopiere sie aus einer Karte). Leere die Koordinaten, um einen Platz zu entfernen.",
+        "es": "Hasta tres lugares más: un nombre y las coordenadas, «latitud, longitud» en grados decimales (cópielas de un mapa). Vacíe las coordenadas para quitar un lugar."
+      }
+    },
+    {
+      "key": "spot_1_name",
+      "type": "string",
+      "label": {
+        "en": "Spot 1: name",
+        "fr": "Coin 1 : nom",
+        "de": "Platz 1: Name",
+        "es": "Lugar 1: nombre"
+      },
+      "placeholder": {
+        "en": "e.g. Lake Simcoe",
+        "fr": "ex. Lac de Pareloup",
+        "de": "z. B. Bodensee",
+        "es": "p. ej. Embalse de Alcántara"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "spot_1_coordinates",
+      "type": "string",
+      "label": {
+        "en": "Spot 1: latitude, longitude",
+        "fr": "Coin 1 : latitude, longitude",
+        "de": "Platz 1: Breite, Länge",
+        "es": "Lugar 1: latitud, longitud"
+      },
+      "placeholder": {
+        "en": "e.g. 44.42, -79.37",
+        "fr": "ex. 44.20, 2.79",
+        "de": "z. B. 47.63, 9.37",
+        "es": "p. ej. 39.72, -6.88"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "spot_2_name",
+      "type": "string",
+      "label": {
+        "en": "Spot 2: name",
+        "fr": "Coin 2 : nom",
+        "de": "Platz 2: Name",
+        "es": "Lugar 2: nombre"
+      },
+      "placeholder": {
+        "en": "e.g. Lake Simcoe",
+        "fr": "ex. Lac de Pareloup",
+        "de": "z. B. Bodensee",
+        "es": "p. ej. Embalse de Alcántara"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "spot_2_coordinates",
+      "type": "string",
+      "label": {
+        "en": "Spot 2: latitude, longitude",
+        "fr": "Coin 2 : latitude, longitude",
+        "de": "Platz 2: Breite, Länge",
+        "es": "Lugar 2: latitud, longitud"
+      },
+      "placeholder": {
+        "en": "e.g. 44.42, -79.37",
+        "fr": "ex. 44.20, 2.79",
+        "de": "z. B. 47.63, 9.37",
+        "es": "p. ej. 39.72, -6.88"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "spot_3_name",
+      "type": "string",
+      "label": {
+        "en": "Spot 3: name",
+        "fr": "Coin 3 : nom",
+        "de": "Platz 3: Name",
+        "es": "Lugar 3: nombre"
+      },
+      "placeholder": {
+        "en": "e.g. Lake Simcoe",
+        "fr": "ex. Lac de Pareloup",
+        "de": "z. B. Bodensee",
+        "es": "p. ej. Embalse de Alcántara"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "spot_3_coordinates",
+      "type": "string",
+      "label": {
+        "en": "Spot 3: latitude, longitude",
+        "fr": "Coin 3 : latitude, longitude",
+        "de": "Platz 3: Breite, Länge",
+        "es": "Lugar 3: latitud, longitud"
+      },
+      "placeholder": {
+        "en": "e.g. 44.42, -79.37",
+        "fr": "ex. 44.20, 2.79",
+        "de": "z. B. 47.63, 9.37",
+        "es": "p. ej. 39.72, -6.88"
+      },
+      "required": false,
+      "default": ""
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "check_places",
+      "label": {
+        "en": "Check the places",
+        "fr": "Vérifier les lieux",
+        "de": "Orte prüfen",
+        "es": "Comprobar los lugares"
+      },
       "timeout_seconds": 30
-    },
-    {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "period_started",
+      "label": {
+        "en": "Solunar period started",
+        "fr": "Période solunaire commencée",
+        "de": "Solunar-Periode begonnen",
+        "es": "Periodo solunar iniciado"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A major or minor solunar period begins at a place.",
+        "fr": "Une période solunaire majeure ou mineure commence en un lieu.",
+        "de": "An einem Ort beginnt eine Haupt- oder Nebenperiode.",
+        "es": "Empieza un periodo solunar mayor o menor en un lugar."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Place",
+            "fr": "Lieu",
+            "de": "Ort",
+            "es": "Lugar"
+          }
         },
         {
-          "key": "target",
+          "key": "kind",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "Period",
+            "fr": "Période",
+            "de": "Periode",
+            "es": "Periodo"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "major",
+              "label": {
+                "en": "Major",
+                "fr": "Majeure",
+                "de": "Hauptperiode",
+                "es": "Mayor"
+              }
+            },
+            {
+              "value": "minor",
+              "label": {
+                "en": "Minor",
+                "fr": "Mineure",
+                "de": "Nebenperiode",
+                "es": "Menor"
+              }
+            }
+          ]
+        },
+        {
+          "key": "rating",
+          "type": "multi_select",
+          "label": {
+            "en": "Day rating",
+            "fr": "Note du jour",
+            "de": "Tagesnote",
+            "es": "Nota del día"
+          },
+          "options": [
+            {
+              "value": "0",
+              "label": {
+                "en": "0 - Poor",
+                "fr": "0 - Faible",
+                "de": "0 - Schwach",
+                "es": "0 - Baja"
+              }
+            },
+            {
+              "value": "1",
+              "label": {
+                "en": "1 - Fair",
+                "fr": "1 - Passable",
+                "de": "1 - Mäßig",
+                "es": "1 - Regular"
+              }
+            },
+            {
+              "value": "2",
+              "label": {
+                "en": "2 - Average",
+                "fr": "2 - Moyenne",
+                "de": "2 - Mittel",
+                "es": "2 - Media"
+              }
+            },
+            {
+              "value": "3",
+              "label": {
+                "en": "3 - Good",
+                "fr": "3 - Bonne",
+                "de": "3 - Gut",
+                "es": "3 - Buena"
+              }
+            },
+            {
+              "value": "4",
+              "label": {
+                "en": "4 - Excellent",
+                "fr": "4 - Excellente",
+                "de": "4 - Ausgezeichnet",
+                "es": "4 - Excelente"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "place",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Place",
+            "fr": "Lieu",
+            "de": "Ort",
+            "es": "Lugar"
+          }
+        },
+        {
+          "key": "start",
+          "type": "string",
+          "label": {
+            "en": "Start",
+            "fr": "Début",
+            "de": "Beginn",
+            "es": "Inicio"
+          }
+        },
+        {
+          "key": "end",
+          "type": "string",
+          "label": {
+            "en": "End",
+            "fr": "Fin",
+            "de": "Ende",
+            "es": "Fin"
+          }
+        },
+        {
+          "key": "with_sun",
+          "type": "boolean",
+          "label": {
+            "en": "With sunrise or sunset",
+            "fr": "Avec lever ou coucher du soleil",
+            "de": "Mit Sonnenauf- oder -untergang",
+            "es": "Con salida o puesta del sol"
+          }
+        },
+        {
+          "key": "summary",
+          "type": "string",
+          "label": {
+            "en": "Summary",
+            "fr": "Résumé",
+            "de": "Zusammenfassung",
+            "es": "Resumen"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "solunar_day",
+      "label": {
+        "en": "Get the solunar day",
+        "fr": "Obtenir la journée solunaire",
+        "de": "Solunar-Tag abrufen",
+        "es": "Obtener el día solunar"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "The periods, rating and moon of today or tomorrow at a place.",
+        "fr": "Les périodes, la note et la lune d'aujourd'hui ou de demain en un lieu.",
+        "de": "Perioden, Note und Mond von heute oder morgen an einem Ort.",
+        "es": "Los periodos, la nota y la luna de hoy o mañana en un lugar."
+      },
+      "timeout_seconds": 10,
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Place",
+            "fr": "Lieu",
+            "de": "Ort",
+            "es": "Lugar"
+          },
           "required": true
+        },
+        {
+          "key": "day",
+          "type": "select",
+          "label": {
+            "en": "Day",
+            "fr": "Jour",
+            "de": "Tag",
+            "es": "Día"
+          },
+          "required": false,
+          "default": "today",
+          "options": [
+            {
+              "value": "today",
+              "label": {
+                "en": "Today",
+                "fr": "Aujourd'hui",
+                "de": "Heute",
+                "es": "Hoy"
+              }
+            },
+            {
+              "value": "tomorrow",
+              "label": {
+                "en": "Tomorrow",
+                "fr": "Demain",
+                "de": "Morgen",
+                "es": "Mañana"
+              }
+            }
+          ]
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "key": "summary",
+          "type": "string",
+          "label": {
+            "en": "Summary",
+            "fr": "Résumé",
+            "de": "Zusammenfassung",
+            "es": "Resumen"
+          }
+        },
+        {
+          "key": "rating",
+          "type": "number",
+          "label": {
+            "en": "Day rating (0-4)",
+            "fr": "Note du jour (0-4)",
+            "de": "Tagesnote (0-4)",
+            "es": "Nota del día (0-4)"
+          }
+        },
+        {
+          "key": "periods",
+          "type": "string",
+          "label": {
+            "en": "Periods",
+            "fr": "Périodes",
+            "de": "Perioden",
+            "es": "Periodos"
+          }
+        },
+        {
+          "key": "moon_phase",
+          "type": "string",
+          "label": {
+            "en": "Moon phase",
+            "fr": "Phase de la lune",
+            "de": "Mondphase",
+            "es": "Fase lunar"
+          }
+        },
+        {
+          "key": "illumination",
+          "type": "number",
+          "label": {
+            "en": "Moon illumination (%)",
+            "fr": "Illumination de la lune (%)",
+            "de": "Mondbeleuchtung (%)",
+            "es": "Iluminación lunar (%)"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "solunar_day",
+      "label": {
+        "en": "Solunar periods",
+        "fr": "Périodes solunaires",
+        "de": "Solunar-Perioden",
+        "es": "Periodos solunares"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "Today's major and minor periods at a place, day rating and moon.",
+        "fr": "Périodes majeures et mineures du jour en un lieu, note du jour et lune.",
+        "de": "Haupt- und Nebenperioden des Tages an einem Ort, Tagesnote und Mond.",
+        "es": "Periodos mayores y menores del día en un lugar, nota del día y luna."
+      },
+      "icon": "moon",
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Place",
+            "fr": "Lieu",
+            "de": "Ort",
+            "es": "Lugar"
+          }
+        },
+        {
+          "key": "show_moon",
+          "type": "boolean",
+          "label": {
+            "en": "Show the moon",
+            "fr": "Afficher la lune",
+            "de": "Mond anzeigen",
+            "es": "Mostrar la luna"
+          },
+          "required": false,
+          "default": true
+        }
+      ]
     }
   ]
 }

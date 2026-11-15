@@ -1,45 +1,92 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
+// Integration configuration: defaults (they mirror the `default` values of the
+// manifest `config_schema`, see test/manifest.test.js) and normalization, so
+// the rest of the code never deals with strings, blanks or `undefined`.
 //
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Places: the located houses of Gladys (`use_houses`) and up to three fishing
+// spots typed by hand, each a name and a "latitude, longitude" text field (a
+// number field of the Gladys form only takes integers, see CLAUDE.md).
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+export const SPOT_SLOTS = [1, 2, 3];
+
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  language: 'fr',
+  use_houses: true,
+  ...Object.fromEntries(
+    SPOT_SLOTS.flatMap((slot) => [
+      [`spot_${slot}_name`, ''],
+      [`spot_${slot}_coordinates`, ''],
+    ]),
+  ),
 };
 
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * "43.6047, 1.4442", "43,6047; 1,4442", "43.6047 1.4442" or "43,6047, 1,4442"
+ * (decimal commas): `{ latitude, longitude }`, or null when it cannot be read.
+ */
+export function parseCoordinates(raw) {
+  const text = String(raw ?? '').trim();
+  if (text === '') {
+    return null;
+  }
+  let parts;
+  if (text.includes(';')) {
+    parts = text.split(';');
+  } else if (/\s/.test(text.replace(/,\s+/g, ','))) {
+    // "43,6 1,4": blanks separate, the commas are decimal commas.
+    parts = text.replace(/,\s+/g, ' ').split(/\s+/);
+  } else {
+    const commas = text.split(',');
+    parts =
+      commas.length === 4 ? [commas.slice(0, 2).join('.'), commas.slice(2).join('.')] : commas;
+  }
+  if (parts.length !== 2) {
+    return null;
+  }
+  const [latitude, longitude] = parts.map((part) => Number(part.trim().replace(',', '.')));
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    Math.abs(latitude) > 90 ||
+    Math.abs(longitude) > 180
+  ) {
+    return null;
+  }
+  return { latitude, longitude };
+}
+
+const toBoolean = (raw, fallback) =>
+  raw === undefined || raw === null || raw === '' ? fallback : raw !== false && raw !== 'false';
+
+/**
+ * @param {Record<string, unknown>} raw the configuration returned by the SDK
+ * @returns {{ language: string, useHouses: boolean,
+ *   spots: Array<{ slot: number, name: string, latitude: number, longitude: number }>,
+ *   invalidSpots: number[] }}
  */
 export function normalizeConfig(raw = {}) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const spots = [];
+  const invalidSpots = [];
+  for (const slot of SPOT_SLOTS) {
+    const name = String(source[`spot_${slot}_name`] ?? '').trim();
+    const text = String(source[`spot_${slot}_coordinates`] ?? '').trim();
+    if (text === '') {
+      continue;
+    }
+    const coordinates = parseCoordinates(text);
+    if (coordinates === null) {
+      invalidSpots.push(slot);
+      continue;
+    }
+    spots.push({ slot, name: name.slice(0, 40) || null, ...coordinates });
+  }
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    language: LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language,
+    useHouses: toBoolean(source.use_houses, DEFAULT_CONFIG.use_houses),
+    spots,
+    invalidSpots,
   };
 }

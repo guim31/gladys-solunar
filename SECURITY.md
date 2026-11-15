@@ -30,6 +30,11 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+The integration makes no network request besides its connection to Gladys:
+every computation is local. It reads the coordinates of the houses of Gladys
+(`location: true`) and keeps them in memory only; the coordinates of the
+fishing spots live in the integration configuration, stored by Gladys. Nothing
+is written under `/data`, there is no secret, and coordinates are never logged.
+
 Out of scope: Gladys Assistant itself (see its
-[security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+[security policy](https://github.com/GladysAssistant/Gladys/security/policy)).

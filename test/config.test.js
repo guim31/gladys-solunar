@@ -1,33 +1,54 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeConfig, DEFAULT_CONFIG } from '../src/config.js';
+import { normalizeConfig, parseCoordinates } from '../src/config.js';
 
-test('normalizeConfig returns the defaults when called with no argument', () => {
-  assert.deepEqual(normalizeConfig(), DEFAULT_CONFIG);
+test('coordinates: points, decimal commas, semicolons, blanks', () => {
+  const expected = { latitude: 43.6047, longitude: 1.4442 };
+  for (const text of [
+    '43.6047, 1.4442',
+    '43.6047,1.4442',
+    ' 43.6047 1.4442 ',
+    '43,6047; 1,4442',
+    '43,6047, 1,4442',
+    '43,6047 1,4442',
+  ]) {
+    assert.deepEqual(parseCoordinates(text), expected, text);
+  }
+  assert.deepEqual(parseCoordinates('-33.86, -151.2'), { latitude: -33.86, longitude: -151.2 });
 });
 
-test('normalizeConfig keeps user values over the defaults', () => {
-  const config = normalizeConfig({ latitude: 45.5, longitude: -73.6, unit: 'fahrenheit' });
-  assert.equal(config.latitude, 45.5);
-  assert.equal(config.longitude, -73.6);
-  assert.equal(config.unit, 'fahrenheit');
+test('coordinates: unreadable or out of range', () => {
+  for (const text of ['', 'Toulouse', '43.6', '95, 10', '43, 200', '1, 2, 3', 'a, b']) {
+    assert.equal(parseCoordinates(text), null, text);
+  }
 });
 
-test('normalizeConfig coerces numeric strings coming from a form', () => {
-  const config = normalizeConfig({ latitude: '48.8', longitude: '2.3', poll_frequency: '600' });
-  assert.equal(config.latitude, 48.8);
-  assert.equal(config.longitude, 2.3);
-  assert.equal(config.poll_frequency, 600);
-  assert.equal(typeof config.poll_frequency, 'number');
+test('defaults: French, the houses, no spot', () => {
+  assert.deepEqual(normalizeConfig({}), {
+    language: 'fr',
+    useHouses: true,
+    spots: [],
+    invalidSpots: [],
+  });
+  assert.equal(normalizeConfig(null).language, 'fr');
+  assert.equal(normalizeConfig({ language: 'it' }).language, 'fr');
 });
 
-test('normalizeConfig falls back to the default for a missing numeric field', () => {
-  const config = normalizeConfig({ unit: 'celsius' });
-  assert.equal(config.poll_frequency, DEFAULT_CONFIG.poll_frequency);
-});
-
-test('GLADYS_PREFER_LOCAL defaults to true and only an explicit false disables it', () => {
-  assert.equal(normalizeConfig().GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: true }).GLADYS_PREFER_LOCAL, true);
-  assert.equal(normalizeConfig({ GLADYS_PREFER_LOCAL: false }).GLADYS_PREFER_LOCAL, false);
+test('spots: kept by slot, unreadable ones reported, names optional', () => {
+  const config = normalizeConfig({
+    language: 'de',
+    use_houses: false,
+    spot_1_name: '  Bodensee ',
+    spot_1_coordinates: '47.63, 9.37',
+    spot_2_name: 'Nowhere',
+    spot_2_coordinates: 'north of the bridge',
+    spot_3_coordinates: '44.42; -79.37',
+  });
+  assert.equal(config.useHouses, false);
+  assert.deepEqual(config.spots, [
+    { slot: 1, name: 'Bodensee', latitude: 47.63, longitude: 9.37 },
+    { slot: 3, name: null, latitude: 44.42, longitude: -79.37 },
+  ]);
+  assert.deepEqual(config.invalidSpots, [2]);
+  assert.equal(normalizeConfig({ use_houses: 'false' }).useHouses, false);
 });

@@ -1,0 +1,99 @@
+// -----------------------------------------------------------------------------
+// Registers every SDK handler on a GladysIntegration (or the SDK's fake Gladys)
+// and returns the monitor, so index.js stays a few lines and the tests drive
+// the very same wiring.
+// -----------------------------------------------------------------------------
+
+import { createLogger } from '@gladysassistant/integration-sdk';
+import { CONFIG_ACTION, SCENE_ACTION, checkPlaces, solunarDayAction } from './actions.js';
+import { normalizeConfig } from './config.js';
+import { STATUS, render } from './messages.js';
+import { Monitor } from './monitor.js';
+import { WIDGETS } from './widgets.js';
+
+const logger = createLogger({ name: 'solunar-app' });
+
+/**
+ * @param {object} gladys GladysIntegration instance
+ * @param {object} [options] test seams: timers, now, timeZone, timings
+ */
+export function registerHandlers(gladys, options = {}) {
+  const monitor = new Monitor({
+    gladys,
+    timers: options.timers ?? true,
+    now: options.now,
+    timeZone: options.timeZone,
+    timings: options.timings,
+  });
+
+  // Resolved once the monitor has started; every handler waits for it, so a
+  // request arriving during the start is not lost.
+  let resolveReady;
+  const ready = new Promise((resolve) => {
+    resolveReady = resolve;
+  });
+  let started = false;
+  const whenReady =
+    (fn) =>
+    async (...args) => {
+      await ready;
+      return fn(...args);
+    };
+
+  gladys.on('connected', async () => {
+    try {
+      const config = await gladys.getConfig().then(normalizeConfig, (err) => {
+        // Defaults rather than nothing: a reconnection or a save of the form
+        // brings the real configuration.
+        logger.warn(`Cannot read the configuration, defaults used: ${err.message}`);
+        return normalizeConfig({});
+      });
+      if (started) {
+        // A reconnection (Gladys restarted): publish everything again.
+        await monitor.resync(config);
+        return;
+      }
+      await monitor.start(config);
+      started = true;
+    } catch (err) {
+      logger.error('Initialization failed', err);
+      await gladys.setConnectionStatus(false, render(STATUS, 'initFailed')).catch(() => {});
+    } finally {
+      resolveReady();
+    }
+  });
+
+  gladys.onScanRequest(whenReady(() => monitor.reloadPlaces()));
+
+  // Devices are published with should_poll: false (the monitor ticks every
+  // minute); this only serves a Gladys that would poll anyway.
+  gladys.onPoll(whenReady((device) => monitor.poll(device)));
+
+  gladys.onDeviceCreated(whenReady((device) => monitor.onDeviceCreated(device)));
+  gladys.onDeviceUpdated(whenReady((device) => monitor.onDeviceChanged(device)));
+  gladys.onDeviceDeleted(whenReady((device) => monitor.onDeviceChanged(device)));
+
+  gladys.onConfigUpdated(whenReady((newConfig) => monitor.reconfigure(normalizeConfig(newConfig))));
+
+  gladys.onAction(
+    CONFIG_ACTION,
+    whenReady(() => checkPlaces(monitor)),
+  );
+  gladys.onSceneAction(
+    SCENE_ACTION,
+    whenReady((fields) => solunarDayAction(monitor, fields)),
+  );
+
+  for (const [key, widget] of Object.entries(WIDGETS)) {
+    gladys.onWidgetGet(
+      key,
+      whenReady((request) => widget.get(monitor, request)),
+    );
+  }
+
+  return {
+    monitor,
+    ready,
+    stop: () => monitor.stop(),
+  };
+}
